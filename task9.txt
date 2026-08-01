@@ -1,0 +1,25 @@
+import os
+import sys
+
+def main():
+    print("Task 9 implementation")
+
+def existing_function():
+    # This function already exists and should not be removed
+    print("Existing function")
+
+def add_java_file_for_spring_app():
+    # Create a new Java file for the Spring app
+    filename = "SpringApp.java"
+    with open(filename, "w") as file:
+        file.write("public class SpringApp {\n")
+        file.write("    public static void main(String[] args) {\n")
+        file.write("        System.out.println(\"Hello, World!\");\n")
+        file.write("    }\n")
+        file.write("}\n")
+    print(f"Java file {filename} created successfully")
+
+if __name__ == "__main__":
+    main()
+    existing_function()
+    add_java_file_for_spring_app()
