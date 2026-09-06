@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Todo List</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2rem; }
+        #todo-input { width: 70%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; }
+        #add-btn, #clear-btn, #mark-all-btn { padding: 0.5rem 1rem; border: none; background: #2ecc71; color: #fff; border-radius: 4px; cursor: pointer; margin-left: 0.5rem; }
+        #add-btn:hover, #clear-btn:hover, #mark-all-btn:hover { background: #27ae60; }
+        #clear-btn { background: #e67e22; }
+        #clear-btn:hover { background: #d35400; }
+        #mark-all-btn { background: #3498db; }
+        #mark-all-btn:hover { background: #2980b9; }
+        ul { list-style-type: none; padding: 0; }
+        li { margin: 0.5rem 0; display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; padding: 0.5rem 1rem; border-radius: 4px; }
+        .remove-btn, .done-btn, .edit-btn { background: #e74c3c; color: #fff; border: none; padding: 0.3rem 0.6rem; cursor: pointer; border-radius: 4px; margin-left: 0.3rem; }
+        .remove-btn:hover, .done-btn:hover, .edit-btn:hover { background: #c0392b; }
+        .done-btn { background: #f1c40f; }
+        .done-btn:hover { background: #f39c12; }
+        .edit-btn { background: #9b59b6; }
+        .edit-btn:hover { background: #8e44ad; }
+        .remove-btn { background: #e74c3c; }
+        .remove-btn:hover { background: #c0392b; }
+        .done span { text-decoration: line-through; color: #777; }
+        .edit-input { padding: 0.3rem; border: 1px solid #ccc; border-radius: 4px; }
+        #todo-input:focus { outline: 2px solid #3498db; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-10px); }
+        }
+        .fade-in { animation: fadeIn 0.3s forwards; }
+        .fade-out { animation: fadeOut 0.3s forwards; }
+    </style>
+</head>
+<body>
+    <h1>Todo List</h1>
+    <input type="text" id="todo-input" placeholder="Enter a new task">
+    <button id="add-btn">Add</button>
+    <button id="clear-btn">Clear All</button>
+    <button id="mark-all-btn">Mark All Done</button>
+    <ul id="todo-list"></ul>
+
+    <script>
+        const input = document.getElementById('todo-input');
+        const addBtn = document.getElementById('add-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const markAllBtn = document.getElementById('mark-all-btn');
+        const list = document.getElementById('todo-list');
+
+        function createTodoItem(text) {
+            const li = document.createElement('li');
+            const span = document.createElement('span');
+            span.textContent = text;
+
+            const removeBtn = document.createElement('button');
+            removeBtn.textContent = 'Remove';
+            removeBtn.className = 'remove-btn';
+            removeBtn.onclick = () => {
+                li.classList.add('fade-out');
+                li.addEventListener('animationend', () => li.remove());
+            };
+
+            const doneBtn = document.createElement('button');
+            doneBtn.textContent = 'Done';
+            doneBtn.className = 'done-btn';
+            doneBtn.onclick = () => {
+                li.classList.toggle('done');
+                doneBtn.textContent = li.classList.contains('done') ? 'Undo' : 'Done';
+            };
+
+            const editBtn = document.createElement('button');
+            editBtn.textContent = 'Edit';
+            editBtn.className = 'edit-btn';
+            editBtn.onclick = () => {
+                const editInput = document.createElement('input');
+                editInput.type = 'text';
+                editInput.value = span.textContent;
+                editInput.className = 'edit-input';
+                editInput.onblur = () => {
+                    span.textContent = editInput.value.trim() || span.textContent;
+                    li.replaceChild(span, editInput);
+                };
+                editInput.onkeypress = e => {
+                    if (e.key === 'Enter') {
+                        editInput.blur();
+                    }
+                };
+                li.replaceChild(editInput, span);
+                editInput.focus();
+            };
+
+            li.appendChild(span);
+            li.appendChild(doneBtn);
+            li.appendChild(editBtn);
+            li.appendChild(removeBtn);
+            li.classList.add('fade-in');
+            return li;
+        }
+
+        function addTodo() {
+            const text = input.value.trim();
+            if (!text) return;
+            const li = createTodoItem(text);
+            list.appendChild(li);
+            input.value = '';
+            input.focus();
+        }
+
+        function clearAll() {
+            const items = Array.from(list.children);
+            items.forEach(li => {
+                li.classList.add('fade-out');
+                li.addEventListener('animationend', () => li.remove());
+            });
+        }
+
+        function markAllDone() {
+            const items = Array.from(list.children);
+            items.forEach(li => {
+                if (!li.classList.contains('done')) {
+                    li.classList.add('done');
+                    const doneBtn = li.querySelector('.done-btn');
+                    if (doneBtn) doneBtn.textContent = 'Undo';
+                }
+            });
+        }
+
+        addBtn.addEventListener('click', addTodo);
+        input.addEventListener('keypress', e => {
+            if (e.key === 'Enter') addTodo();
+        });
+        clearBtn.addEventListener('click', clearAll);
+        markAllBtn.addEventListener('click', markAllDone);
+    </script>
+</body>
+</html>
