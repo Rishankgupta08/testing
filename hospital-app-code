@@ -1,0 +1,368 @@
+import tkinter as tk
+from tkinter import ttk, messagebox
+import sqlite3
+import webbrowser
+import os
+
+class HospitalManagementApplication:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Hospital Management Application")
+        self.root.geometry("800x600")
+        self.dark_mode = False
+
+        self.notebook = ttk.Notebook(self.root)
+        self.notebook.pack(pady=10, expand=True)
+
+        self.patient_frame = tk.Frame(self.notebook)
+        self.doctor_frame = tk.Frame(self.notebook)
+        self.appointment_frame = tk.Frame(self.notebook)
+
+        self.notebook.add(self.patient_frame, text="Patient")
+        self.notebook.add(self.doctor_frame, text="Doctor")
+        self.notebook.add(self.appointment_frame, text="Appointment")
+
+        self.patient_widgets()
+        self.doctor_widgets()
+        self.appointment_widgets()
+
+        self.conn = sqlite3.connect("hospital.db")
+        self.cursor = self.conn.cursor()
+
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS patients (
+                id INTEGER PRIMARY KEY,
+                name TEXT NOT NULL,
+                age INTEGER NOT NULL,
+                contact TEXT NOT NULL
+            )
+        """)
+
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS doctors (
+                id INTEGER PRIMARY KEY,
+                name TEXT NOT NULL,
+                specialty TEXT NOT NULL,
+                contact TEXT NOT NULL
+            )
+        """)
+
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS appointments (
+                id INTEGER PRIMARY KEY,
+                patient_id INTEGER NOT NULL,
+                doctor_id INTEGER NOT NULL,
+                date TEXT NOT NULL,
+                time TEXT NOT NULL,
+                FOREIGN KEY (patient_id) REFERENCES patients (id),
+                FOREIGN KEY (doctor_id) REFERENCES doctors (id)
+            )
+        """)
+
+        self.conn.commit()
+
+        self.dark_mode_button = tk.Button(self.root, text="Dark Mode", command=self.toggle_dark_mode)
+        self.dark_mode_button.pack(pady=10)
+
+        self.web_app_button = tk.Button(self.root, text="Open Web App", command=self.open_web_app)
+        self.web_app_button.pack(pady=10)
+
+    def patient_widgets(self):
+        tk.Label(self.patient_frame, text="Patient Name").grid(row=0, column=0, padx=5, pady=5)
+        tk.Label(self.patient_frame, text="Patient Age").grid(row=1, column=0, padx=5, pady=5)
+        tk.Label(self.patient_frame, text="Patient Contact").grid(row=2, column=0, padx=5, pady=5)
+
+        self.patient_name = tk.Entry(self.patient_frame)
+        self.patient_age = tk.Entry(self.patient_frame)
+        self.patient_contact = tk.Entry(self.patient_frame)
+
+        self.patient_name.grid(row=0, column=1, padx=5, pady=5)
+        self.patient_age.grid(row=1, column=1, padx=5, pady=5)
+        self.patient_contact.grid(row=2, column=1, padx=5, pady=5)
+
+        tk.Button(self.patient_frame, text="Add Patient", command=self.add_patient).grid(row=3, column=0, columnspan=2, padx=5, pady=5)
+
+        self.patient_list = tk.Listbox(self.patient_frame)
+        self.patient_list.grid(row=4, column=0, columnspan=2, padx=5, pady=5)
+
+        tk.Button(self.patient_frame, text="View Patients", command=self.view_patients).grid(row=5, column=0, columnspan=2, padx=5, pady=5)
+
+    def doctor_widgets(self):
+        tk.Label(self.doctor_frame, text="Doctor Name").grid(row=0, column=0, padx=5, pady=5)
+        tk.Label(self.doctor_frame, text="Doctor Specialty").grid(row=1, column=0, padx=5, pady=5)
+        tk.Label(self.doctor_frame, text="Doctor Contact").grid(row=2, column=0, padx=5, pady=5)
+
+        self.doctor_name = tk.Entry(self.doctor_frame)
+        self.doctor_specialty = tk.Entry(self.doctor_frame)
+        self.doctor_contact = tk.Entry(self.doctor_frame)
+
+        self.doctor_name.grid(row=0, column=1, padx=5, pady=5)
+        self.doctor_specialty.grid(row=1, column=1, padx=5, pady=5)
+        self.doctor_contact.grid(row=2, column=1, padx=5, pady=5)
+
+        tk.Button(self.doctor_frame, text="Add Doctor", command=self.add_doctor).grid(row=3, column=0, columnspan=2, padx=5, pady=5)
+
+        self.doctor_list = tk.Listbox(self.doctor_frame)
+        self.doctor_list.grid(row=4, column=0, columnspan=2, padx=5, pady=5)
+
+        tk.Button(self.doctor_frame, text="View Doctors", command=self.view_doctors).grid(row=5, column=0, columnspan=2, padx=5, pady=5)
+
+    def appointment_widgets(self):
+        tk.Label(self.appointment_frame, text="Patient ID").grid(row=0, column=0, padx=5, pady=5)
+        tk.Label(self.appointment_frame, text="Doctor ID").grid(row=1, column=0, padx=5, pady=5)
+        tk.Label(self.appointment_frame, text="Date").grid(row=2, column=0, padx=5, pady=5)
+        tk.Label(self.appointment_frame, text="Time").grid(row=3, column=0, padx=5, pady=5)
+
+        self.appointment_patient_id = tk.Entry(self.appointment_frame)
+        self.appointment_doctor_id = tk.Entry(self.appointment_frame)
+        self.appointment_date = tk.Entry(self.appointment_frame)
+        self.appointment_time = tk.Entry(self.appointment_frame)
+
+        self.appointment_patient_id.grid(row=0, column=1, padx=5, pady=5)
+        self.appointment_doctor_id.grid(row=1, column=1, padx=5, pady=5)
+        self.appointment_date.grid(row=2, column=1, padx=5, pady=5)
+        self.appointment_time.grid(row=3, column=1, padx=5, pady=5)
+
+        tk.Button(self.appointment_frame, text="Add Appointment", command=self.add_appointment).grid(row=4, column=0, columnspan=2, padx=5, pady=5)
+
+        self.appointment_list = tk.Listbox(self.appointment_frame)
+        self.appointment_list.grid(row=5, column=0, columnspan=2, padx=5, pady=5)
+
+        tk.Button(self.appointment_frame, text="View Appointments", command=self.view_appointments).grid(row=6, column=0, columnspan=2, padx=5, pady=5)
+
+    def add_patient(self):
+        name = self.patient_name.get()
+        age = self.patient_age.get()
+        contact = self.patient_contact.get()
+
+        self.cursor.execute("INSERT INTO patients (name, age, contact) VALUES (?, ?, ?)", (name, age, contact))
+        self.conn.commit()
+
+        self.patient_name.delete(0, tk.END)
+        self.patient_age.delete(0, tk.END)
+        self.patient_contact.delete(0, tk.END)
+
+    def view_patients(self):
+        self.patient_list.delete(0, tk.END)
+
+        self.cursor.execute("SELECT * FROM patients")
+        patients = self.cursor.fetchall()
+
+        for patient in patients:
+            self.patient_list.insert(tk.END, f"ID: {patient[0]}, Name: {patient[1]}, Age: {patient[2]}, Contact: {patient[3]}")
+
+    def add_doctor(self):
+        name = self.doctor_name.get()
+        specialty = self.doctor_specialty.get()
+        contact = self.doctor_contact.get()
+
+        self.cursor.execute("INSERT INTO doctors (name, specialty, contact) VALUES (?, ?, ?)", (name, specialty, contact))
+        self.conn.commit()
+
+        self.doctor_name.delete(0, tk.END)
+        self.doctor_specialty.delete(0, tk.END)
+        self.doctor_contact.delete(0, tk.END)
+
+    def view_doctors(self):
+        self.doctor_list.delete(0, tk.END)
+
+        self.cursor.execute("SELECT * FROM doctors")
+        doctors = self.cursor.fetchall()
+
+        for doctor in doctors:
+            self.doctor_list.insert(tk.END, f"ID: {doctor[0]}, Name: {doctor[1]}, Specialty: {doctor[2]}, Contact: {doctor[3]}")
+
+    def add_appointment(self):
+        patient_id = self.appointment_patient_id.get()
+        doctor_id = self.appointment_doctor_id.get()
+        date = self.appointment_date.get()
+        time = self.appointment_time.get()
+
+        self.cursor.execute("INSERT INTO appointments (patient_id, doctor_id, date, time) VALUES (?, ?, ?, ?)", (patient_id, doctor_id, date, time))
+        self.conn.commit()
+
+        self.appointment_patient_id.delete(0, tk.END)
+        self.appointment_doctor_id.delete(0, tk.END)
+        self.appointment_date.delete(0, tk.END)
+        self.appointment_time.delete(0, tk.END)
+
+    def view_appointments(self):
+        self.appointment_list.delete(0, tk.END)
+
+        self.cursor.execute("SELECT * FROM appointments")
+        appointments = self.cursor.fetchall()
+
+        for appointment in appointments:
+            self.appointment_list.insert(tk.END, f"ID: {appointment[0]}, Patient ID: {appointment[1]}, Doctor ID: {appointment[2]}, Date: {appointment[3]}, Time: {appointment[4]}")
+
+    def toggle_dark_mode(self):
+        if not self.dark_mode:
+            self.root.configure(bg="#2b2b2b")
+            self.patient_frame.configure(bg="#2b2b2b")
+            self.doctor_frame.configure(bg="#2b2b2b")
+            self.appointment_frame.configure(bg="#2b2b2b")
+            self.notebook.configure(bg="#2b2b2b")
+            self.dark_mode_button.configure(text="Light Mode", bg="#2b2b2b", fg="white")
+            for widget in self.patient_frame.winfo_children():
+                if isinstance(widget, tk.Label):
+                    widget.configure(bg="#2b2b2b", fg="white")
+                elif isinstance(widget, tk.Entry):
+                    widget.configure(bg="#4b4b4b", fg="white", insertbackground="white")
+                elif isinstance(widget, tk.Button):
+                    widget.configure(bg="#4b4b4b", fg="white")
+                elif isinstance(widget, tk.Listbox):
+                    widget.configure(bg="#4b4b4b", fg="white")
+            for widget in self.doctor_frame.winfo_children():
+                if isinstance(widget, tk.Label):
+                    widget.configure(bg="#2b2b2b", fg="white")
+                elif isinstance(widget, tk.Entry):
+                    widget.configure(bg="#4b4b4b", fg="white", insertbackground="white")
+                elif isinstance(widget, tk.Button):
+                    widget.configure(bg="#4b4b4b", fg="white")
+                elif isinstance(widget, tk.Listbox):
+                    widget.configure(bg="#4b4b4b", fg="white")
+            for widget in self.appointment_frame.winfo_children():
+                if isinstance(widget, tk.Label):
+                    widget.configure(bg="#2b2b2b", fg="white")
+                elif isinstance(widget, tk.Entry):
+                    widget.configure(bg="#4b4b4b", fg="white", insertbackground="white")
+                elif isinstance(widget, tk.Button):
+                    widget.configure(bg="#4b4b4b", fg="white")
+                elif isinstance(widget, tk.Listbox):
+                    widget.configure(bg="#4b4b4b", fg="white")
+            self.dark_mode = True
+        else:
+            self.root.configure(bg="SystemButtonFace")
+            self.patient_frame.configure(bg="SystemButtonFace")
+            self.doctor_frame.configure(bg="SystemButtonFace")
+            self.appointment_frame.configure(bg="SystemButtonFace")
+            self.notebook.configure(bg="SystemButtonFace")
+            self.dark_mode_button.configure(text="Dark Mode", bg="SystemButtonFace", fg="black")
+            for widget in self.patient_frame.winfo_children():
+                if isinstance(widget, tk.Label):
+                    widget.configure(bg="SystemButtonFace", fg="black")
+                elif isinstance(widget, tk.Entry):
+                    widget.configure(bg="white", fg="black", insertbackground="black")
+                elif isinstance(widget, tk.Button):
+                    widget.configure(bg="SystemButtonFace", fg="black")
+                elif isinstance(widget, tk.Listbox):
+                    widget.configure(bg="white", fg="black")
+            for widget in self.doctor_frame.winfo_children():
+                if isinstance(widget, tk.Label):
+                    widget.configure(bg="SystemButtonFace", fg="black")
+                elif isinstance(widget, tk.Entry):
+                    widget.configure(bg="white", fg="black", insertbackground="black")
+                elif isinstance(widget, tk.Button):
+                    widget.configure(bg="SystemButtonFace", fg="black")
+                elif isinstance(widget, tk.Listbox):
+                    widget.configure(bg="white", fg="black")
+            for widget in self.appointment_frame.winfo_children():
+                if isinstance(widget, tk.Label):
+                    widget.configure(bg="SystemButtonFace", fg="black")
+                elif isinstance(widget, tk.Entry):
+                    widget.configure(bg="white", fg="black", insertbackground="black")
+                elif isinstance(widget, tk.Button):
+                    widget.configure(bg="SystemButtonFace", fg="black")
+                elif isinstance(widget, tk.Listbox):
+                    widget.configure(bg="white", fg="black")
+            self.dark_mode = False
+
+    def open_web_app(self):
+        html = """
+        <html>
+        <head>
+            <title>Hospital Management Application</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                }
+                table {
+                    border-collapse: collapse;
+                }
+                th, td {
+                    border: 1px solid black;
+                    padding: 10px;
+                }
+            </style>
+        </head>
+        <body>
+            <h1>Hospital Management Application</h1>
+            <h2>Patients</h2>
+            <table>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Age</th>
+                    <th>Contact</th>
+                </tr>
+        """
+        self.cursor.execute("SELECT * FROM patients")
+        patients = self.cursor.fetchall()
+        for patient in patients:
+            html += f"""
+                <tr>
+                    <td>{patient[0]}</td>
+                    <td>{patient[1]}</td>
+                    <td>{patient[2]}</td>
+                    <td>{patient[3]}</td>
+                </tr>
+            """
+        html += """
+            </table>
+            <h2>Doctors</h2>
+            <table>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Specialty</th>
+                    <th>Contact</th>
+                </tr>
+        """
+        self.cursor.execute("SELECT * FROM doctors")
+        doctors = self.cursor.fetchall()
+        for doctor in doctors:
+            html += f"""
+                <tr>
+                    <td>{doctor[0]}</td>
+                    <td>{doctor[1]}</td>
+                    <td>{doctor[2]}</td>
+                    <td>{doctor[3]}</td>
+                </tr>
+            """
+        html += """
+            </table>
+            <h2>Appointments</h2>
+            <table>
+                <tr>
+                    <th>ID</th>
+                    <th>Patient ID</th>
+                    <th>Doctor ID</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                </tr>
+        """
+        self.cursor.execute("SELECT * FROM appointments")
+        appointments = self.cursor.fetchall()
+        for appointment in appointments:
+            html += f"""
+                <tr>
+                    <td>{appointment[0]}</td>
+                    <td>{appointment[1]}</td>
+                    <td>{appointment[2]}</td>
+                    <td>{appointment[3]}</td>
+                    <td>{appointment[4]}</td>
+                </tr>
+            """
+        html += """
+            </table>
+        </body>
+        </html>
+        """
+        with open("hospital_app.html", "w") as f:
+            f.write(html)
+        webbrowser.open("hospital_app.html")
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = HospitalManagementApplication(root)
+    root.mainloop()
