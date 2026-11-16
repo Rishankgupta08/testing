@@ -1,1 +1,5 @@
-<generated code from previous step>
+def add(a, b):
+    return a + b
+
+def multiply(a, b):
+    return a * b
